@@ -29,7 +29,7 @@ pen_color: function(
 
 ## What does `annotated` mean?
 
-Interface types is expected to define a type `annotated<T, dns-name, type-name>`.
+Interface types is expected to define a type `annotated<T, type-name>`.
 The parameters mean:
 
  - `T`: the type that `annotated<T, ...>` is semantically equivalent to in wasm.
