@@ -87,7 +87,7 @@ in, but this is not guaranteed.
 | `string` | `media:` + `<extension>` | Filename extension string, excluding the dot |
 | `f*`     | `unit:` + `<unit>`  | A quantity, described [below](#unit) |
 | `u*`     | `currency:` + `<currency>` | A quantity of currency, described below [below](#currency) |
-| `string` | `locale:language` | [IETF BCP 47 language tag]   |
+| `string` | `locale:` + `<language tag>` | [IETF BCP 47 language tag]   |
 | `bool`   | `schema:Boolean:` + `<property-name>` | A [schema.org Boolean property name] |
 | `n*`     | `schema:Number:` + `<property-name>` | A [schema.org Number property name] |
 | `u128`   | `schema:DateTime:UTC:` + `<property-name>` | A [schema.org DateTime property name], represented as UTC time nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
@@ -104,7 +104,7 @@ Abbreviations:
  - `n*` refers to any number type - signed or unsigned integer, or floating-point
  - `*<u8>` refers to any list or stream of `u8`
 
-## `<unit>`
+#### `<unit>`
 
 The `<unit>` grammar is modeled after the syntax used in Wikipedia pages to
 describe units and derived units, for example on the [SI derived unit] page.
@@ -119,7 +119,7 @@ promote interchange.
 Note that this uses U+2212 MINUS SIGN for "−" rather than
 U+002D HYPHEN-MINUS ("-"), for consistency with Wikipedia.
 
-### `<unit>` Grammar:
+##### `<unit>` Grammar:
 
 ```ebnf
 unit = unit , "⋅" , factor
@@ -169,20 +169,14 @@ binary_symbol = "B" ;
 other_literal = "τ" ;
 ```
 
-[SI base units]: https://en.wikipedia.org/wiki/SI_base_unit
-[SI derived unit]: https://en.wikipedia.org/wiki/SI_derived_unit
-[SI derived units with special names]: https://en.wikipedia.org/wiki/SI_derived_unit#Derived_units_with_special_names
-[Byte]: https://en.wikipedia.org/wiki/Byte
-[Turn]: https://en.wikipedia.org/wiki/Turn_(angle)
-
-## `<currency>`
+#### `<currency>`
 
 The `<currency>` must be a standard active alphabetic code from [ISO 4217].
-Other letter sequences are reserved for future use.
+Other letter sequences are reserved for future use. The integer value
+represents a quantity of currency denominated in the [minor units] of the
+specified currency.
 
-[ISO 4217]: https://en.wikipedia.org/wiki/ISO_4217
-
-## Examples of wasi.dev types
+#### Examples of wasi.dev types
 
 The `unit:` annotations allow the use of units, which includes:
  - SI units, including base units such as `km`, `s`, `mg`, etc., as well as
@@ -212,11 +206,14 @@ and many more, as well as records containing property fields, including:
 
 and many more.
 
-An example of a function representing a product offer:
+An example of a function which defines a product offer:
 ```
+/// Define an offer named `name`, with a price of `price` denominated in US
+/// cents (hundreths of US dollars), with availability as described in
+/// `availability`.
 offer: function(
     name: annotated<string, "wasi.dev", "schema:Text:name">,
-    price: annotated<annotated<u64, "wasi.dev", "currency:$/100">, "wasi.dev", "schema:Text:price">,
+    price: annotated<annotated<u64, "wasi.dev", "currency:USD">, "wasi.dev", "schema:Text:price">,
     availability: annotated<string, "wasi.dev", "schema:Text:availability">,
 )
 ```
@@ -268,3 +265,10 @@ offer: function(
 [`AggregateRating`]: https://schema.org/AggregateRating
 [`reviewRating`]: https://schema.org/reviewRating
 [`reviewBody`]: https://schema.org/reviewBody
+[SI base units]: https://en.wikipedia.org/wiki/SI_base_unit
+[SI derived unit]: https://en.wikipedia.org/wiki/SI_derived_unit
+[SI derived units with special names]: https://en.wikipedia.org/wiki/SI_derived_unit#Derived_units_with_special_names
+[Byte]: https://en.wikipedia.org/wiki/Byte
+[Turn]: https://en.wikipedia.org/wiki/Turn_(angle)
+[ISO 4217]: https://en.wikipedia.org/wiki/ISO_4217
+[minor units]: https://en.wikipedia.org/wiki/ISO_4217#Minor_units_of_currency
