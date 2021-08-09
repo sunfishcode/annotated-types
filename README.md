@@ -8,14 +8,15 @@ Type Annotations could be used for, in a simple [Logo]-like API:
 /// Move the turtle forward `how_far` meters.
 forward: function(
   turtle: turtle,
-  how_far: annotated<f32, "wasi.dev", "units:m">,
+  how_far: annotated<f32, "wasi.dev", "unit:m">,
 )
 
-/// Turn the turtle left by `how_much`, an angle measured in fractions of
-/// a full circle.
+/// Turn the turtle left by `how_much`, an angle measured as a fraction of
+/// a full circle, where `0.25` means turn left and `0.75` means (effectively)
+/// turn right.
 turn_left: function(
   turtle: turtle,
-  how_much: annotated<f32, "wasi.dev", "units:circ">,
+  how_much: annotated<f32, "wasi.dev", "unit:τ">,
 )
 
 /// Set the pen color of the turtle to `color`, which is record containing
@@ -43,9 +44,9 @@ The parameters mean:
    should ideally describe the purpose of the type.
 
 For example, a parameter interpreted as a velocity value may have type
-`annotated<u32, "wasi.dev", "units:m/s">`, with `m/s` indicating that the
+`annotated<u32, "wasi.dev", "unit:m/s">`, with `m/s` indicating that the
 value in meters per second. A file size parameter may have type
-`annotated<u64, "wasi.dev", "units:By">` indicating a size in bytes. An
+`annotated<u64, "wasi.dev", "unit:B">` indicating a size in bytes. An
 email address parameter may have type
 `annotated<string, "wasi.dev", "input:email">`. Or a non-WASI type might look
 like `annotated<string, "example.com", "foo">`.
@@ -78,15 +79,14 @@ in, but this is not guaranteed.
 | `u8`     | `time:weekday`       | Weekday index, 1-based     |
 | `u128`   | `time:UTC` | UTC time as nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
 | `u128`   | `time:TAI` | TAI time as nanoseconds since 1970-01-01T00:00:00Z |
-| `i*`     | `math:angle:turns` | Mathematical angle measure in turns divided by the number of representable values |
 | `f*`     | `math:angle:radians` | Mathematical angle measure in radians |
 | `f*`     | `math:probability`   | Mathematical probability   |
 | `record` | `math:complex` | A complex number with `real` and `imag` fields |
 | `string` | `media:media-type`   | A [Media Type] (aka MIME type) name |
 | `*<u8>`  | `media:` + `<media type>` | [Media Type] (aka MIME type) data |
 | `string` | `media:` + `<extension>` | Filename extension string, excluding the dot |
-| `f*`     | `units:` + `<c/s ucum>` | A [UCUM] type specified in case-sensitive ("c/s") format, excluding [Customary units] and [Legacy units] |
-| `u*`     | `currency:` + `<sign>` + `/` + `<denominator>` | A quantity of currency denominated according to `<sign>`, for example `$` or a USV in [U+20A0–U+20CF], divided by `<denominator>`.
+| `f*`     | `unit:` + `<unit>`  | A quantity, described [below](#unit) |
+| `u*`     | `currency:` + `<currency>` | A quantity of currency, described below [below](#currency) |
 | `string` | `locale:language` | [IETF BCP 47 language tag]   |
 | `bool`   | `schema:Boolean:` + `<property-name>` | A [schema.org Boolean property name] |
 | `n*`     | `schema:Number:` + `<property-name>` | A [schema.org Number property name] |
@@ -104,15 +104,92 @@ Abbreviations:
  - `n*` refers to any number type - signed or unsigned integer, or floating-point
  - `*<u8>` refers to any list or stream of `u8`
 
+## `<unit>`
+
+The `<unit>` grammar is modeled after the syntax used in Wikipedia pages to
+describe units and derived units, for example on the [SI derived unit] page.
+For example, a newton metre second per kilogram is expressed as `N⋅m⋅s/kg`.
+
+It's built on the [SI base units] (except with `g` instead of `kg` so that we
+don't need to special-case it in the grammar) and the
+[SI derived units with special names]. It also includes a few additional units
+to address specific use cases, but in general it avoids customary units, to
+promote interchange.
+
+Note that this uses U+2212 MINUS SIGN for "−" rather than
+U+002D HYPHEN-MINUS ("-"), for consistency with Wikipedia.
+
+### `<unit>` Grammar:
+
+```ebnf
+unit = unit , "⋅" , factor
+     | unit , "/" , factor
+     | factor
+     ;
+
+factor = sign , base , exponent ;
+sign = "" | "−" ;
+base = literal
+     | "(" , unit , ")"
+     ;
+
+exponent = exp_sign , exp_digits ;
+exp_sign = "" | "⁻" ;
+exp_digits = exp_digit excluding zero , { exp_digit } ;
+exp_digit excluding zero = "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ;
+exp_digit = "⁰" | exp_digit excluding zero
+
+literal = metric_literal | binary_literal | other_literal ;
+metric_literal = metric_prefix , metric_symbol ;
+binary_literal = binary_prefix , binary_symbol ;
+
+; <https://en.wikipedia.org/wiki/Metric_prefix>
+metric_prefix = big_metric_prefix | small_metric_prefix ;
+big_metric_prefix = "da" | "h" | "k" | "M" | "G" | "T" | "P" | "E" | "Z" | "Y" ;
+small_metric_prefix = "d" | "c" | "m" | "μ" | "n" | "p" | "f" | "a" | "z" | "y" ;
+
+; <https://en.wikipedia.org/wiki/Binary_prefix>
+binary_prefix = "Ki" | "Mi" | "Gi" | "Ti" | "Pi" | "Ei" | "Zi" | "Yi" ;
+
+metric_symbol = simple_unit | named_unit ;
+
+; <https://en.wikipedia.org/wiki/SI_base_unit>, but with g instead of kg to
+; simplify the grammar.
+simple_unit = "s" | "m" | "g" | "A" | "K" | "mol" | "cd" ;
+
+; <https://en.wikipedia.org/wiki/SI_derived_unit#Derived_units_with_special_names>
+named_unit = "Hz" | "rad" | "sr" | "N" | "Pa" | "J" | "W" | "C" | "V" | "F" | "Ω"
+           | "S" | "Wb" | "T" | "H" | "°C" | "lm" | "lx" | "Bq" | "Gy" | "Sv" | "kat" ;
+
+; <https://en.wikipedia.org/wiki/Byte>
+binary_symbol = "B" ;
+
+; <https://en.wikipedia.org/wiki/Turn_(angle)>, for representing dyadic ratios of
+; plane angles without rounding.
+other_literal = "τ" ;
+```
+
+[SI base units]: https://en.wikipedia.org/wiki/SI_base_unit
+[SI derived unit]: https://en.wikipedia.org/wiki/SI_derived_unit
+[SI derived units with special names]: https://en.wikipedia.org/wiki/SI_derived_unit#Derived_units_with_special_names
+[Byte]: https://en.wikipedia.org/wiki/Byte
+[Turn]: https://en.wikipedia.org/wiki/Turn_(angle)
+
+## `<currency>`
+
+The `<currency>` must be a standard active alphabetic code from [ISO 4217].
+Other letter sequences are reserved for future use.
+
+[ISO 4217]: https://en.wikipedia.org/wiki/ISO_4217
+
 ## Examples of wasi.dev types
 
-The `units:` annotations allow the use of [UCUM] units, which includes:
- - SI units, including base units such as `m`, `s`, `kg`, etc., as well as
-   prefixed and derived units such as `cm`, `ns`, `ug`, `m/s`, `m/s2`
-   (meters per second per second), etc.
+The `unit:` annotations allow the use of units, which includes:
+ - SI units, including base units such as `km`, `s`, `mg`, etc., as well as
+   derived units such as `m/s`, `m/s²`, etc.
 
- - Byte sizes, using `By` to represent bytes, optionally with IEC binary
-   prefixes to represent multiples of larger sizes, for example `MiBy`, `GiBy`,
+ - Byte sizes, using `B` to represent bytes, optionally with IEC binary
+   prefixes to represent multiples of larger sizes, for example `MiB`, `GiB`,
    etc.
 
 The `schema:` annotations allow the use of [schema.org] property names, which
@@ -135,6 +212,15 @@ and many more, as well as records containing property fields, including:
 
 and many more.
 
+An example of a function representing a product offer:
+```
+offer: function(
+    name: annotated<string, "wasi.dev", "schema:Text:name">,
+    price: annotated<annotated<u64, "wasi.dev", "currency:$/100">, "wasi.dev", "schema:Text:price">,
+    availability: annotated<string, "wasi.dev", "schema:Text:availability">,
+)
+```
+
 [E-mail Address]: https://developer.mozilla.org/en-US/docs/Learn/Forms/HTML5_input_types#e-mail_address_field
 [Search]: https://developer.mozilla.org/en-US/docs/Learn/Forms/HTML5_input_types#search_field
 [Phone number]: https://developer.mozilla.org/en-US/docs/Learn/Forms/HTML5_input_types#phone_number_field
@@ -143,7 +229,6 @@ and many more.
 [Week]: https://developer.mozilla.org/en-US/docs/Learn/Forms/HTML5_input_types#week
 [Color]: https://developer.mozilla.org/en-US/docs/Learn/Forms/HTML5_input_types#color_picker_control
 [Media Type]: https://www.iana.org/assignments/media-types/media-types.xhtml
-[UCUM]: https://ucum.org/ucum.html
 [U+20A0–U+20CF]: https://www.unicode.org/charts/PDF/U20A0.pdf
 [IETF BCP 47 language tag]: https://www.rfc-editor.org/info/bcp47
 [Logo]: https://en.wikipedia.org/wiki/Logo_(programming_language)
@@ -155,8 +240,6 @@ and many more.
 [schema.org Date property name]: https://schema.org/Date
 [schema.org DataType property name]: https://schema.org/DataType
 [schema.org Thing name]: https://schema.org/Thing
-[Customary units]: https://ucum.org/ucum.html#section-Customary-Unit-Atoms
-[Legacy units]: https://ucum.org/ucum.html#section-Other-Legacy-Units
 [schema.org]: https://schema.org
 [`arrivalTime`]: https://schema.org/arrivalTime
 [`checkinTime`]: https://schema.org/checkinTime
