@@ -124,14 +124,13 @@ unit = unit , "⋅" , factor
      | factor
      ;
 
-factor = base , exponent ;
+factor = base , [ exponent ] ;
 base = literal
      | "(" , unit , ")"
      ;
 
-exponent = exp_sign , exp_digits ;
-exp_sign = "" | "⁻" ;
-exp_digits = exp_digit excluding zero , { exp_digit } ;
+exponent = [ "-" ] , exp_magnitude ;
+exp_magnitude = exp_digit excluding zero , { exp_digit } ;
 exp_digit excluding zero = "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ;
 exp_digit = "⁰" | exp_digit excluding zero
 
