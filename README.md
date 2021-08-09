@@ -1,8 +1,8 @@
 # WASI Type Annotations
 
-This document describes *Type Annotations*, an anticipated feature of
-Interface Types, and their use in WASI. Here's a quick example of what
-Type Annotations could be used for, in a simple [Logo]-like API:
+This document describes the `annotated` type, an anticipated feature of
+Interface Types, and its use in WASI. Here's a quick example of what
+`annotated` could be used for, in a simple [Logo]-like API:
 
 ```
 /// Move the turtle forward `how_far` meters.
@@ -68,34 +68,34 @@ in, but this is not guaranteed.
 
 ### Names defined under the `wasi.dev` DNS name
 
-| Type     | Name                 | Description                |
-| -------- | -------------------- | -------------------------- |
-| `string` | `input:search`       | [Search]                   |
-| `record` | `input:color`        | [Color] represented as a record containing `red`, `green`, and `blue` numeric values |
-| `string` | `address:email`      | [E-mail Address]           |
-| `string` | `address:phone`      | [Phone number]             |
-| `u8`     | `time:month`         | [Month] index, 1-based     |
-| `u8`     | `time:week`          | [Week] index, 1-based      |
-| `u8`     | `time:weekday`       | Weekday index, 1-based     |
-| `u128`   | `time:UTC` | UTC time as nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
-| `u128`   | `time:TAI` | TAI time as nanoseconds since 1970-01-01T00:00:00Z |
-| `f*`     | `math:angle:radians` | Mathematical angle measure in radians |
-| `f*`     | `math:probability`   | Mathematical probability   |
-| `record` | `math:complex` | A complex number with `real` and `imag` fields |
-| `string` | `media:media-type`   | A [Media Type] (aka MIME type) name |
-| `*<u8>`  | `media:` + `<media type>` | [Media Type] (aka MIME type) data |
-| `string` | `media:` + `<extension>` | Filename extension string, excluding the dot |
-| `f*`     | `unit:` + `<unit>`  | A quantity, described [below](#unit) |
-| `u*`     | `currency:` + `<currency>` | A quantity of currency, described below [below](#currency) |
-| `string` | `locale:` + `<language tag>` | [IETF BCP 47 language tag]   |
-| `bool`   | `schema:Boolean:` + `<property-name>` | A [schema.org Boolean property name] |
-| `n*`     | `schema:Number:` + `<property-name>` | A [schema.org Number property name] |
-| `u128`   | `schema:DateTime:UTC:` + `<property-name>` | A [schema.org DateTime property name], represented as UTC time nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
-| `string` | `schema:Text:` + `<property-name>` | A [schema.org Text property name] |
-| `record` | `schema:Time:` + `<property-name>` | A [schema.org Time property name], represented as a record containing the time of day with `seconds`, `minutes`, and `hours` |
-| `record` | `schema:Date:` + `<property-name>` | A [schema.org Date property name], represented as a record containing a `year` number, a `month` index, and a `day` index |
-| `string` | `schema:DataType:` + `<property-name>` | A [schema.org DataType property name] |
-| `record` | `schema:Thing:` + `<thing-name>` | A [schema.org Thing name], represented as a record with a subset of the fields in the schema |
+| Interface Type | `type-name`    | Meaning                    |
+| -------------- | -------------------- | -------------------------- |
+| `string`       | `input:search`       | [Search]                   |
+| `record`       | `input:color`        | [Color] represented as a record containing `red`, `green`, and `blue` numeric values |
+| `string`       | `address:email`      | [E-mail Address]           |
+| `string`       | `address:phone`      | [Phone number]             |
+| `u8`           | `time:month`         | [Month] index, 1-based     |
+| `u8`           | `time:week`          | [Week] index, 1-based      |
+| `u8`           | `time:weekday`       | Weekday index, 1-based     |
+| `u128`         | `time:UTC`           | UTC time as nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
+| `u128`         | `time:TAI`           | TAI time as nanoseconds since 1970-01-01T00:00:00Z |
+| `f*`           | `math:angle:radians` | Mathematical angle measure in radians |
+| `f*`           | `math:probability`   | Mathematical probability   |
+| `record`       | `math:complex`       | A complex number with `real` and `imag` fields |
+| `string`       | `media:extension`    | Filename extension string, excluding the dot |
+| `string`       | `media:media-type`   | A [Media Type] (aka MIME type) name |
+| `*<u8>`        | `media:` + `<media type>`   | [Media Type] (aka MIME type) data |
+| `f*`           | `unit:` + `<unit>`   | A quantity, described [below](#unit) |
+| `u*`           | `currency:` + `<currency>` | A quantity of currency, described below [below](#currency) |
+| `string`       | `language:language-tag`    | [IETF BCP 47 language tag]   |
+| `bool`         | `schema:Boolean:` + `<property-name>`  | A [schema.org Boolean property name] |
+| `n*`           | `schema:Number:` + `<property-name>`   | A [schema.org Number property name] |
+| `u128`         | `schema:DateTime:UTC:` + `<property-name>` | A [schema.org DateTime property name], represented as UTC time nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
+| `string`       | `schema:Text:` + `<property-name>`     | A [schema.org Text property name] |
+| `record`       | `schema:Time:` + `<property-name>`     | A [schema.org Time property name], represented as a record containing the time of day with `seconds`, `minutes`, and `hours` |
+| `record`       | `schema:Date:` + `<property-name>`     | A [schema.org Date property name], represented as a record containing a `year` number, a `month` index, and a `day` index |
+| `string`       | `schema:DataType:` + `<property-name>` | A [schema.org DataType property name] |
+| `record`       | `schema:Thing:` + `<thing-name>`       | A [schema.org Thing name], represented as a record with a subset of the fields in the schema |
 
 Abbreviations:
  - `f*` refers to any floating-point type
