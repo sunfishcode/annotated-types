@@ -116,9 +116,6 @@ don't need to special-case it in the grammar) and the
 to address specific use cases, but in general it avoids customary units, to
 promote interchange.
 
-Note that this uses U+2212 MINUS SIGN for "−" rather than
-U+002D HYPHEN-MINUS ("-"), for consistency with Wikipedia.
-
 ##### `<unit>` Grammar:
 
 ```ebnf
@@ -127,8 +124,7 @@ unit = unit , "⋅" , factor
      | factor
      ;
 
-factor = sign , base , exponent ;
-sign = "" | "−" ;
+factor = base , exponent ;
 base = literal
      | "(" , unit , ")"
      ;
