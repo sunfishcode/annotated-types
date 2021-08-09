@@ -80,7 +80,7 @@ in, but this is not guaranteed.
 | `string`       | `media:extension`    | Filename extension string, excluding the dot |
 | `string`       | `media:media-type`   | A [Media Type] (aka MIME type) name |
 | `*<u8>`        | `media:` + `<media type>`   | [Media Type] (aka MIME type) data |
-| `f*`           | `unit:` + `<unit>`   | A quantity, described [below](#unit) |
+| `n*`           | `unit:` + `<unit>`   | A quantity, described [below](#unit) |
 | `u*`           | `currency:` + `<currency>` | A quantity of currency, described below [below](#currency) |
 | `string`       | `language:language-tag`    | [IETF BCP 47 language tag]   |
 | `bool`         | `schema:Boolean:` + `<property-name>`  | A [schema.org Boolean property name] |
