@@ -54,8 +54,9 @@ like `annotated<string, "example.com", "foo">`.
 One use for these annotations is to guide user interfaces to components.
 For example, in a GUI, a component containing a `input:phone` may pop up a
 specialized phone-number entry widget, or a time:UTC` may pop up its date
-picker. However, note that the annotations are independent of the actual
-interface.
+picker. Or a command-line interface might allow users to type "4 GiB" when
+providing a value for a "unit:B" parameter. However, note that the annotations
+are independent of the actual interface.
 
 Annotated types *do not perform validation*. For example, `input:email`
 does not ensure that string values contain valid email addresses, or conform
