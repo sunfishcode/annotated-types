@@ -8,7 +8,7 @@ Interface Types, and its use in WASI. Here's a quick example of what
 /// Move the turtle forward `how_far` meters.
 forward: function(
   turtle: turtle,
-  how_far: annotated<f32, "wasi.dev", "unit:m">,
+  how_far: annotated<f32, "wasi:unit:m">,
 )
 
 /// Turn the turtle left by `how_much`, an angle measured as a fraction of
@@ -16,14 +16,14 @@ forward: function(
 /// turn right.
 turn_left: function(
   turtle: turtle,
-  how_much: annotated<f32, "wasi.dev", "unit:τ">,
+  how_much: annotated<f32, "wasi:unit:τ">,
 )
 
 /// Set the pen color of the turtle to `color`, which is record containing
 /// red, green, and blue fields.
 pen_color: function(
   turtle: turtle,
-  color: annotated<rgb, "wasi.dev", "input:color">,
+  color: annotated<rgb, "wasi:input:color">,
 )
 ```
 
@@ -34,22 +34,16 @@ The parameters mean:
 
  - `T`: the type that `annotated<T, ...>` is semantically equivalent to in wasm.
 
- - `dns-name`: A string containing a fully-qualified DNS name. This isn't
-    resolved or interpreted here, and just serves as a namespace qualifier to
-    discourage collisions. Developers defining new annotations should use the
-    name of a DNS name they are associated with. Official WASI types use the
-    dns-name "wasi.dev".
-
  - `type-name`: A string annotation. This string is also uninterpreted, but it
    should ideally describe the purpose of the type.
 
 For example, a parameter interpreted as a velocity value may have type
-`annotated<u32, "wasi.dev", "unit:m/s">`, with `m/s` indicating that the
+`annotated<u32, "wasi:unit:m/s">`, with `m/s` indicating that the
 value in meters per second. A file size parameter may have type
-`annotated<u64, "wasi.dev", "unit:B">` indicating a size in bytes. An
+`annotated<u64, "wasi:unit:B">` indicating a size in bytes. An
 email address parameter may have type
-`annotated<string, "wasi.dev", "input:email">`. Or a non-WASI type might look
-like `annotated<string, "example.com", "foo">`.
+`annotated<string, "wasi:input:email">`. Or a non-WASI type might look
+like `annotated<string, "example:foo">`.
 
 One use for these annotations is to guide user interfaces to components.
 For example, in a GUI, a component containing a `input:phone` may pop up a
@@ -67,7 +61,7 @@ annotations to provide specialized input methods will often have already
 validated the inputs, providing user-friendly feedback before it gets passed
 in, but this is not guaranteed.
 
-### Names defined under the `wasi.dev` DNS name
+### Names defined under the WASI namespace `wasi:`
 
 | Interface Type | `type-name`    | Meaning                    |
 | -------------- | -------------------- | -------------------------- |
@@ -172,7 +166,7 @@ Other letter sequences are reserved for future use. The integer value
 represents a quantity of currency denominated in the [minor units] of the
 specified currency.
 
-#### Examples of wasi.dev types
+#### Examples of WASI types
 
 The `unit:` annotations allow the use of units, which includes:
  - SI units, including base units such as `km`, `s`, `mg`, etc., as well as
@@ -208,9 +202,9 @@ An example of a function which defines a product offer:
 /// cents (hundreths of US dollars), with availability as described in
 /// `availability`.
 offer: function(
-    name: annotated<string, "wasi.dev", "schema:Text:name">,
-    price: annotated<annotated<u64, "wasi.dev", "currency:USD">, "wasi.dev", "schema:Text:price">,
-    availability: annotated<string, "wasi.dev", "schema:Text:availability">,
+    name: annotated<string, "wasi:schema:Text:name">,
+    price: annotated<annotated<u64, "wasi:currency:USD">, "wasi:schema:Text:price">,
+    availability: annotated<string, "wasi:schema:Text:availability">,
 )
 ```
 
