@@ -1,115 +1,106 @@
 # WASI Type Annotations
 
-This document describes the `annotated` type, an anticipated feature of
-Interface Types, and its use in WASI. Here's a quick example of what
+This document describes the `annotated` type, a feature that I may propose to
+be added to Wasm Components in the future. Here's a quick example of what
 `annotated` could be used for, in a simple [Logo]-like API:
 
 ```
-/// Move the turtle forward `how_far` meters.
-forward: function(
-  turtle: turtle,
-  how_far: annotated<f32, "wasi:unit:m">,
-)
+resource turtle {
+    /// Move the turtle forward `how_far` centimeters.
+    forward: function(
+        how_far: annotated<f32, "unit:cm">,
+    );
 
-/// Turn the turtle left by `how_much`, an angle measured as a fraction of
-/// a full circle, where `0.25` means turn left and `0.75` means (effectively)
-/// turn right.
-turn_left: function(
-  turtle: turtle,
-  how_much: annotated<f32, "wasi:unit:τ">,
-)
+    /// Turn the turtle left by `how_much`, an angle measured as a fraction of
+    /// a full circle. For example, `0.25` means turn to face to the left, `0.5`
+    /// means turn to face backward, and `-0.25` (or `0.75`) means turn to the
+    /// right.
+    turn_left: function(
+        how_much: annotated<f32, "math:angle:τ">,
+    );
 
-/// Set the pen color of the turtle to `color`, which is record containing
-/// red, green, and blue fields.
-pen_color: function(
-  turtle: turtle,
-  color: annotated<rgb, "wasi:input:color">,
-)
+    /// Set the pen color of the turtle to `color`, which is record containing
+    /// red, green, and blue fields.
+    pen_color: function(
+        color: annotated<rgb, "input:color">,
+    );
+}
 ```
+
+If this turns out to be useful, one could also imagine adding dedicated syntax,
+which could perhaps look like this:
+```
+  how_far: f32 @ unit:cm,
+```
+Or maybe something completely different. Who knows!
 
 ## What does `annotated` mean?
 
-Interface types is expected to define a type `annotated<T, type-name>`.
-The parameters mean:
+In the component model, a type `annotated<T, type-name>` would be semantically
+equivalent to type `T`. It would have `type-name` as an associated uninterpreted
+string that describes additional interpretation or intent.
 
- - `T`: the type that `annotated<T, ...>` is semantically equivalent to in wasm.
+For example, a parameter that conveys a velocity quantity may have type
+`annotated<u32, "unit:m/s">`, with `m/s` indicating that the
+value in meters per second. An email address parameter may have type
+`annotated<string, "input:email">`.
 
- - `type-name`: A string annotation. This string is also uninterpreted, but it
-   should ideally describe the purpose of the type.
-
-For example, a parameter interpreted as a velocity value may have type
-`annotated<u32, "wasi:unit:m/s">`, with `m/s` indicating that the
-value in meters per second. A file size parameter may have type
-`annotated<u64, "wasi:unit:B">` indicating a size in bytes. An
-email address parameter may have type
-`annotated<string, "wasi:input:email">`. Or a non-WASI type might look
-like `annotated<string, "example:foo">`.
-
-One use for these annotations is to guide user interfaces to components.
-For example, in a GUI, a component containing a `input:phone` may pop up a
-specialized phone-number entry widget, or a time:UTC` may pop up its date
-picker. Or a command-line interface might allow users to type "4 GiB" when
-providing a value for a "unit:B" parameter. However, note that the annotations
-are independent of the actual interface.
+One use for these annotations is to guide user interfaces. For example, in a
+GUI, a component requiring a `input:phone` parameter might pop up a specialized
+phone-number entry widget, or a time:UTC` may pop up its date picker. Or a
+command-line interface might allow users to type "4 GiB" when providing a value
+for a "unit:B" parameter.
 
 Annotated types *do not perform validation*. For example, `input:email`
-does not ensure that string values contain valid email addresses, or conform
-to any grammar at all. WASI programs are encouraged to trap on encountering
-inputs that are not valid according to their annotations rather than
-employing explicit error handling. In many cases, User interfaces that use
-annotations to provide specialized input methods will often have already
-validated the inputs, providing user-friendly feedback before it gets passed
-in, but this is not guaranteed.
+does not ensure that string values contain valid email addresses.
 
-### Names defined under the WASI namespace `wasi:`
+### Names:
 
-| Interface Type | `type-name`    | Meaning                    |
-| -------------- | -------------------- | -------------------------- |
-| `string`       | `input:search`       | [Search]                   |
-| `record`       | `input:color`        | [Color] represented as a record containing `red`, `green`, and `blue` numeric values |
-| `string`       | `address:email`      | [E-mail Address]           |
-| `string`       | `address:phone`      | [Phone number]             |
-| `u8`           | `time:month`         | [Month] index, 1-based     |
-| `u8`           | `time:week`          | [Week] index, 1-based      |
-| `u8`           | `time:weekday`       | Weekday index, 1-based     |
-| `u128`         | `time:UTC`           | UTC time as nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
-| `u128`         | `time:TAI`           | TAI time as nanoseconds since 1970-01-01T00:00:00Z |
-| `f*`           | `math:angle:radians` | Mathematical angle measure in radians |
-| `f*`           | `math:probability`   | Mathematical probability   |
-| `record`       | `math:complex`       | A complex number with `real` and `imag` fields |
-| `string`       | `media:extension`    | Filename extension string, excluding the dot |
-| `string`       | `media:media-type`   | A [Media Type] (aka MIME type) name |
-| `*<u8>`        | `media:` + `<media type>`   | [Media Type] (aka MIME type) data |
-| `n*`           | `unit:` + `<unit>`   | A quantity, described [below](#unit) |
-| `u*`           | `currency:` + `<currency>` | A quantity of currency, described below [below](#currency) |
-| `string`       | `language:language-tag`    | [IETF BCP 47 language tag]   |
-| `bool`         | `schema:Boolean:` + `<property-name>`  | A [schema.org Boolean property name] |
-| `n*`           | `schema:Number:` + `<property-name>`   | A [schema.org Number property name] |
-| `u128`         | `schema:DateTime:UTC:` + `<property-name>` | A [schema.org DateTime property name], represented as UTC time nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
-| `string`       | `schema:Text:` + `<property-name>`     | A [schema.org Text property name] |
-| `record`       | `schema:Time:` + `<property-name>`     | A [schema.org Time property name], represented as a record containing the time of day with `seconds`, `minutes`, and `hours` |
-| `record`       | `schema:Date:` + `<property-name>`     | A [schema.org Date property name], represented as a record containing a `year` number, a `month` index, and a `day` index |
-| `string`       | `schema:DataType:` + `<property-name>` | A [schema.org DataType property name] |
-| `record`       | `schema:Thing:` + `<thing-name>`       | A [schema.org Thing name], represented as a record with a subset of the fields in the schema |
+| `type-name`          | Interface Type  | Meaning                    |
+| -------------------- | --------------- | -------------------------- |
+| `input:search`       | `string`        | [Search]                   |
+| `input:color`        | `record`        | [Color] represented as a record containing `red`, `green`, and `blue` numeric values |
+| `address:email`      | `string`        | [E-mail Address]           |
+| `address:phone`      | `string`        | [Phone number]             |
+| `time:month`         | `u8`            | [Month] index, 1-based     |
+| `time:week`          | `u8`            | [Week] index, 1-based      |
+| `time:weekday`       | `u8`            | Weekday index, 1-based     |
+| `time:UTC`           | `i128`          | UTC time as nanoseconds since 1970-01-01T00:00:00Z minus leap seconds |
+| `time:TAI`           | `i128`          | TAI time as nanoseconds since 1970-01-01T00:00:00Z |
+| `math:angle:τ`       | `f*`            | Mathematical angle measure in [turns] |
+| `math:angle:radians` | `f*`            | Mathematical angle measure in radians |
+| `math:probability`   | `f*`            | Mathematical probability; a value in `[0.0,1.0]` |
+| `math:complex`       | `record { f*, f* }` | A complex number with `real` and `imag` fields |
+| `media:extension`    | `string`        | Filename extension string, excluding the dot |
+| `media:media-type`   | `string`        | A [Media Type] (aka MIME type) name |
+| `media:` + `<media type>`  | `*<u8>`   | [Media Type] (aka MIME type) data |
+| `unit:` + `<unit>`   | `n*`            | A quantity, described [below](#unit) |
+| `currency:` + `<currency>` | `u*`      | A quantity of currency, described below [below](#currency) |
+| `language:language-tag`    | `string`  | [IETF BCP 47 language tag]   |
 
 Abbreviations:
  - `f*` refers to any floating-point type
  - `u*` refers to any unsigned integer type
+ - `s*` refers to any signed integer type
  - `i*` refers to any signed or unsigned integer type
  - `n*` refers to any number type - signed or unsigned integer, or floating-point
  - `*<u8>` refers to any list or stream of `u8`
 
 #### `<unit>`
 
-The `<unit>` grammar is modeled after the syntax used in Wikipedia pages to
-describe units and derived units, for example on the [SI derived unit] page.
-For example, a newton metre second per kilogram is expressed as `N⋅m⋅s/kg`.
+The `<unit>` grammar is modeled after the syntax used in the [SI Brochure]
+and Wikipedia pages to describe units and derived units, for example on the
+[SI derived unit] page. For example, a newton metre second per kilogram is
+expressed as `N⋅m⋅s/kg`.
 
 It's built on the [SI base units] (except with `g` instead of `kg` so that we
 don't need to special-case it in the grammar) and the
 [SI derived units with special names]. It also includes a few additional units
 to address specific use cases, but in general it avoids customary units, to
 promote interchange.
+
+TODO: The [SI Brochure] recommends against having two `/` signs not isolated
+from each other with parens.
 
 ##### `<unit>` Grammar:
 
@@ -153,10 +144,6 @@ named_unit = "Hz" | "rad" | "sr" | "N" | "Pa" | "J" | "W" | "C" | "V" | "F" | "�
 
 ; <https://en.wikipedia.org/wiki/Byte>
 binary_symbol = "B" ;
-
-; <https://en.wikipedia.org/wiki/Turn_(angle)>, for representing dyadic ratios of
-; plane angles without rounding.
-other_literal = "τ" ;
 ```
 
 #### `<currency>`
@@ -166,7 +153,7 @@ Other letter sequences are reserved for future use. The integer value
 represents a quantity of currency denominated in the [minor units] of the
 specified currency.
 
-#### Examples of WASI types
+#### Examples
 
 The `unit:` annotations allow the use of units, which includes:
  - SI units, including base units such as `km`, `s`, `mg`, etc., as well as
@@ -202,9 +189,9 @@ An example of a function which defines a product offer:
 /// cents (hundreths of US dollars), with availability as described in
 /// `availability`.
 offer: function(
-    name: annotated<string, "wasi:schema:Text:name">,
-    price: annotated<annotated<u64, "wasi:currency:USD">, "wasi:schema:Text:price">,
-    availability: annotated<string, "wasi:schema:Text:availability">,
+    name: annotated<string, "schema:Text:name">,
+    price: annotated<annotated<u64, "currency:USD">, "schema:Text:price">,
+    availability: annotated<string, "schema:Text:availability">,
 )
 ```
 
@@ -219,14 +206,6 @@ offer: function(
 [U+20A0–U+20CF]: https://www.unicode.org/charts/PDF/U20A0.pdf
 [IETF BCP 47 language tag]: https://www.rfc-editor.org/info/bcp47
 [Logo]: https://en.wikipedia.org/wiki/Logo_(programming_language)
-[schema.org Boolean property name]: https://schema.org/Boolean
-[schema.org Number property name]: https://schema.org/Number
-[schema.org DateTime property name]: https://schema.org/DateTime
-[schema.org Text property name]: https://schema.org/Text
-[schema.org Time property name]: https://schema.org/Time
-[schema.org Date property name]: https://schema.org/Date
-[schema.org DataType property name]: https://schema.org/DataType
-[schema.org Thing name]: https://schema.org/Thing
 [schema.org]: https://schema.org
 [`arrivalTime`]: https://schema.org/arrivalTime
 [`checkinTime`]: https://schema.org/checkinTime
@@ -258,7 +237,9 @@ offer: function(
 [SI base units]: https://en.wikipedia.org/wiki/SI_base_unit
 [SI derived unit]: https://en.wikipedia.org/wiki/SI_derived_unit
 [SI derived units with special names]: https://en.wikipedia.org/wiki/SI_derived_unit#Derived_units_with_special_names
+[SI Brochure]: https://www.bipm.org/en/publications/si-brochure/
 [Byte]: https://en.wikipedia.org/wiki/Byte
 [Turn]: https://en.wikipedia.org/wiki/Turn_(angle)
 [ISO 4217]: https://en.wikipedia.org/wiki/ISO_4217
 [minor units]: https://en.wikipedia.org/wiki/ISO_4217#Minor_units_of_currency
+[turns]: https://en.wikipedia.org/wiki/Turn_(angle)
